@@ -1,0 +1,8 @@
+steps:
+  - label: 'run the cardano node sync test on Mainnet using a Linux machine'
+    commands:
+      - nix-shell --run 'python ./sync_tests.py -nt "3458" -dt "958" -e "shelley_qa"'
+    timeout_in_minutes: 360
+    agents:
+      system: x86_64-linux
+      queue: benchmark_large
