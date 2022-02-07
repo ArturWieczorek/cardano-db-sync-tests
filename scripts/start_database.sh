@@ -1,17 +1,20 @@
 #! /usr/bin/env nix-shell
-#! nix-shell -i bash --pure --keep PGPASSFILE --keep PGHOST --keep PGPORT --keep PGUSER -p glibcLocales postgresql lsof procps
+#! nix-shell -i bash --pure --keep LOG_FILEPATH --keep ENVIRONMENT -p glibcLocales postgresql lsof procps
 # shellcheck shell=bash
 
 cd cardano-db-sync
 
-which psql
+export PGPASSFILE=config/pgpass-$ENVIRONMENT
+echo "/tmp/postgres:5432:${ENVIRONMENT}:postgres:*" > $PGPASSFILE
+chmod 600 $PGPASSFILE
 
-#nix-build -A cardano-db-sync -o db-sync-node
+PGPASSFILE=$PGPASSFILE scripts/postgresql-setup.sh --createdb
 
-#ls -l
-#PGPASSFILE=config/pgpass-shelley_qa
+nix-build -A cardano-db-sync -o db-sync-node
 
-
-export PATH="/nix/store/jdvs7vad2l2z3fvkc9gwypsqvp159hgg-postgresql-11.13/bin:$PATH"
-
-PGPASSFILE=$PGPASSFILE db-sync-node/bin/cardano-db-sync --config config/shelley-qa-config.json --socket-path ../cardano-node/db/node.socket --schema-dir schema/ --state-dir ledger-state/shelley_qa >> logfile.log
+if [ "$ENVIRONMENT" = "shelley_qa" ];
+then
+    PGPASSFILE=$PGPASSFILE db-sync-node/bin/cardano-db-sync --config config/shelley-qa-config.json --socket-path ../cardano-node/db/node.socket --schema-dir schema/ --state-dir ledger-state/${ENVIRONMENT} >> ${LOG_FILEPATH} &
+else
+    PGPASSFILE=$PGPASSFILE db-sync-node/bin/cardano-db-sync --config config/${ENVIRONMENT}-config.yaml --socket-path ../cardano-node/db/node.socket --schema-dir schema/ --state-dir ledger-state/${ENVIRONMENT} >> ${LOG_FILEPATH} &
+fi

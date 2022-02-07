@@ -1,7 +1,14 @@
 import os
 import platform
 import zipfile
+import signal
+import subprocess
+
+from os.path import normpath, basename
+from pathlib import Path
+from psutil import process_iter
 from datetime import datetime
+from git import Repo
 
 import psutil
 import time
@@ -31,6 +38,43 @@ def get_total_ram_in_GB():
     return int(psutil.virtual_memory().total / 1000000000)
 
 
+def export_env_var(name, value):
+    os.environ[name] = str(value)
+
+
+def clone_repo(repo_name, repo_branch):
+    location = os.getcwd() + f"/{repo_name}"
+    repo = Repo.clone_from(f"git@github.com:input-output-hk/{repo_name}.git", location)
+    repo.git.checkout(repo_branch)
+    print(f"Repo: {repo_name} cloned to: {location}")
+    return location
+
+
+def upload_artifact(file):
+    p = subprocess.Popen(["buildkite-agent", "artifact", "upload", f"{file}"])
+    outs, errs = p.communicate(timeout=180)
+    if outs is not None: print(outs)
+
+
+def print_file(file):
+    with open(file) as f:
+        contents = f.read()
+        print(contents)
+
+
+def stop_process(proc_name):
+    for proc in process_iter():
+        if proc_name in proc.name():
+            print(f" --- Killing the {proc_name} process - {proc}")
+            proc.send_signal(signal.SIGTERM)
+            proc.terminate()
+            proc.kill()
+    time.sleep(30)
+    for proc in process_iter():
+        if proc_name in proc.name():
+            print(f" !!! ERROR: {proc_name} process is still active - {proc}")
+
+
 def show_percentage(part, whole):
     return round(100 * float(part) / float(whole), 2)
 
@@ -44,19 +88,24 @@ def get_file_creation_date(path_to_file):
     return time.ctime(os.path.getmtime(path_to_file))
 
 
+def create_dir(dir_name, root='.'):
+    Path(f"{root}/{dir_name}").mkdir(parents=True, exist_ok=True)
+    return f"{root}/{dir_name}"
+
+
 def get_directory_size(start_path='.'):
-    # returns directory size in bytes
-    total_size = 0
+    total_size_in_bytes = 0
     for dirpath, dirnames, filenames in os.walk(start_path):
         for f in filenames:
             fp = os.path.join(dirpath, f)
-            total_size += os.path.getsize(fp)
-    return total_size
+            total_size_in_bytes += os.path.getsize(fp)
+    return total_size_in_bytes
 
 
-def zip_file(archive_name, file_name):
+def zip_file(archive_name, file_path):
     with zipfile.ZipFile(archive_name, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zip:
-        zip.write(file_name)
+        file_name = basename(normpath(file_path))
+        zip.write(file_path, arcname=file_name)
 
 
 def unzip_file(file_name):
@@ -68,7 +117,7 @@ def unzip_file(file_name):
 
 
 def delete_file(file_path):
-    # file_path should be a Path (pathlib object)
+    # file_path => a Path (pathlib object)
     try:
         file_path.unlink()
     except OSError as e:

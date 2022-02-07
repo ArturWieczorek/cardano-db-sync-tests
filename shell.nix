@@ -7,16 +7,17 @@ let
     requests
     psutil
     GitPython
-    # other python packages you want
+    # other python packages if needed
   ]);
 in
 pkgs.mkShell {
   buildInputs = [
     python-with-my-packages
-    # other dependencies
+    pkgs.postgresql
+    pkgs.buildkite-agent
   ];
   shellHook = ''
     PYTHONPATH=${python-with-my-packages}/${python-with-my-packages.sitePackages}
-    # maybe set more env-vars
+    # set more env-vars
   '';
 }
