@@ -106,13 +106,22 @@ def get_testnet_value():
 
 
 def get_node_version():
-    cmd = "./cardano-cli --version"
-    output = (
-        subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT).decode("utf-8").strip()
-    )
-    cardano_cli_version = output.split("git rev ")[0].strip()
-    cardano_cli_git_rev = output.split("git rev ")[1].strip()
-    return str(cardano_cli_version), str(cardano_cli_git_rev)
+    try:
+        cmd = "./cardano-cli --version"
+        output = (
+            subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+                .decode("utf-8")
+                .strip()
+        )
+        cardano_cli_version = output.split("git rev ")[0].strip()
+        cardano_cli_git_rev = output.split("git rev ")[1].strip()
+        return str(cardano_cli_version), str(cardano_cli_git_rev)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(
+            "command '{}' return with error (code {}): {}".format(
+                e.cmd, e.returncode, " ".join(str(e.output).split())
+            )
+        )
 
 
 def get_node_tip(timeout_seconds=10):
@@ -163,7 +172,7 @@ def wait_for_node_to_start():
 def start_node_in_cwd(env):
     current_directory = Path.cwd()
     if not 'cardano-node' == basename(normpath(current_directory)):
-        raise Exception(f"You are not inside 'cardano-node' directory. Your location: {current_directory}")
+        raise Exception(f"You're not inside 'cardano-node' directory but in: {current_directory}")
 
     print(f"current_directory: {current_directory}")
     cmd = (
@@ -176,23 +185,30 @@ def start_node_in_cwd(env):
     logfile = open(NODE_LOG_FILE_PATH, "w+")
     print(f"start node cmd: {cmd}")
 
-    p = subprocess.Popen(cmd.split(" "), stdout=logfile, stderr=logfile)
-    print("waiting for db folder to be created")
-    count = 0
-    count_timeout = 299
-    while not os.path.isdir(current_directory / "db"):
-        time.sleep(1)
-        count += 1
-        if count > count_timeout:
-            print(
-                f"ERROR: waited {count_timeout} seconds and the DB folder was not created yet")
-            exit(1)
+    try:
+        p = subprocess.Popen(cmd.split(" "), stdout=logfile, stderr=logfile)
+        print("waiting for db folder to be created")
+        count = 0
+        count_timeout = 299
+        while not os.path.isdir(current_directory / "db"):
+            time.sleep(1)
+            count += 1
+            if count > count_timeout:
+                print(
+                    f"ERROR: waited {count_timeout} seconds and the DB folder was not created yet")
+                exit(1)
 
-    print(f"DB folder was created after {count} seconds")
-    secs_to_start = wait_for_node_to_start()
-    print(f" - listdir current_directory: {os.listdir(current_directory)}")
-    print(f" - listdir db: {os.listdir(current_directory / 'db')}")
-    return secs_to_start
+        print(f"DB folder was created after {count} seconds")
+        secs_to_start = wait_for_node_to_start()
+        print(f" - listdir current_directory: {os.listdir(current_directory)}")
+        print(f" - listdir db: {os.listdir(current_directory / 'db')}")
+        return secs_to_start
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(
+            "command '{}' return with error (code {}): {}".format(
+                e.cmd, e.returncode, " ".join(str(e.output).split())
+            )
+        )
 
 
 def setup_postgres():
@@ -202,12 +218,21 @@ def setup_postgres():
     export_env_var("PGUSER", 'postgres')
     export_env_var("PGPORT", '5432')
 
-    cmd = "./scripts/postgres-start.sh '/tmp/postgres' -k"
-    output = (
-        subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT).decode("utf-8").strip()
-    )
-    print(f"Setup postgres script output: {output}")
-    os.chdir(current_directory)
+    try:
+        cmd = "./scripts/postgres-start.sh '/tmp/postgres' -k"
+        output = (
+            subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+            .decode("utf-8")
+            .strip()
+        )
+        print(f"Setup postgres script output: {output}")
+        os.chdir(current_directory)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(
+            "command '{}' return with error (code {}): {}".format(
+                e.cmd, e.returncode, " ".join(str(e.output).split())
+            )
+        )
 
 
 def start_db_sync():
@@ -216,12 +241,20 @@ def start_db_sync():
     export_env_var("ENVIRONMENT", get_environment())
     export_env_var("LOG_FILEPATH", DB_SYNC_LOG_FILE_PATH)
 
-    cmd = "./scripts/start_database.sh"
-    p = subprocess.Popen(cmd)
-    os.chdir(current_directory)
+    try:
+        cmd = "./scripts/start_database.sh"
+        p = subprocess.Popen(cmd)
+        os.chdir(current_directory)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(
+            "command '{}' return with error (code {}): {}".format(
+                e.cmd, e.returncode, " ".join(str(e.output).split())
+            )
+        )
 
     not_found = True
     counter = 0
+
     while (not_found):
         if counter > 600:
             print(f"ERROR: waited {counter} seconds and the db-sync was not started")
@@ -238,32 +271,67 @@ def start_db_sync():
 
 
 def get_db_sync_version():
-    cmd = "db-sync-node/bin/cardano-db-sync --version"
-    output = (subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT).decode("utf-8").strip())
-    cardano_db_sync_version = output.split("git revision ")[0].strip()
-    cardano_db_sync_git_revision = output.split("git revision ")[1].strip()
-    return str(cardano_db_sync_version), str(cardano_db_sync_git_revision)
+    try:
+        cmd = "db-sync-node/bin/cardano-db-sync --version"
+        output = (
+            subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+                .decode("utf-8")
+                .strip()
+        )
+        cardano_db_sync_version = output.split("git revision ")[0].strip()
+        cardano_db_sync_git_revision = output.split("git revision ")[1].strip()
+        return str(cardano_db_sync_version), str(cardano_db_sync_git_revision)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(
+            "command '{}' return with error (code {}): {}".format(
+                e.cmd, e.returncode, " ".join(str(e.output).split())
+            )
+        )
 
 
 def get_db_sync_progress():
     p = subprocess.Popen(["psql", "-P", "pager=off", "-qt", "-U", "postgres", "-d", f"{get_environment()}",  "-c", "select 100 * (extract (epoch from (max (time) at time zone 'UTC')) - extract (epoch from (min (time) at time zone 'UTC'))) / (extract (epoch from (now () at time zone 'UTC')) - extract (epoch from (min (time) at time zone 'UTC'))) as sync_percent from block ;" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    outs, errs = p.communicate(timeout=5)
-    return outs.decode("utf-8")
+    try:
+        outs, errs = p.communicate(timeout=5)
+        return outs.decode("utf-8")
+    except TimeoutExpired as e:
+        p.kill()
+        raise RuntimeError(
+            "command '{}' return with error (code {}): {}".format(
+                e.cmd, e.returncode, " ".join(str(e.output).split())
+            )
+        )
 
 
 def get_db_sync_tip():
     p = subprocess.Popen(["psql", "-P", "pager=off", "-qt", "-U", "postgres", "-d", f"{get_environment()}",  "-c", "select epoch_no, block_no from block order by id desc limit 1;" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    outs, errs = p.communicate(timeout=5)
-    print(outs)
-    return outs.decode("utf-8")
+    try:
+        outs, errs = p.communicate(timeout=5)
+        epoch_no, block_no = [e.strip() for e in outs.decode("utf-8").split("|")]
+        return epoch_no, block_no
+    except TimeoutExpired as e:
+        p.kill()
+        raise RuntimeError(
+            "command '{}' return with error (code {}): {}".format(
+                e.cmd, e.returncode, " ".join(str(e.output).split())
+            )
+        )
 
 
 def export_epoch_sync_times_from_db(file):
     os.chdir(ROOT_TEST_PATH / "cardano-db-sync")
     p = subprocess.Popen(["psql", f"{get_environment()}", "-t", "-c", f"\o {file}", "-c", "SELECT array_to_json(array_agg(epoch_sync_time), FALSE) FROM epoch_sync_time;" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    outs, errs = p.communicate(timeout=5)
-    print(outs.decode("utf-8"))
-    return outs.decode("utf-8")
+    try:
+        outs, errs = p.communicate(timeout=5)
+        print(outs.decode("utf-8"))
+        return outs.decode("utf-8")
+    except (TimeoutExpired, subprocess.CalledProcessError) as e:
+        p.kill()
+        raise RuntimeError(
+            "command '{}' return with error (code {}): {}".format(
+                e.cmd, e.returncode, " ".join(str(e.output).split())
+            )
+        )
 
 
 def wait_for_db_to_sync():
@@ -279,18 +347,19 @@ def wait_for_db_to_sync():
             time.sleep(5)
 
     count = 0
-    while db_sync_progress < 1:
+    while db_sync_progress < 99.99:
         if count % 60 == 0:
             get_node_tip()
-            get_db_sync_tip()
+            epoch_no, block_no = get_db_sync_tip()
             db_sync_progress = float(get_db_sync_progress())
-            print(f"db sync progress : {db_sync_progress}")
+            print(f"db sync progress : {db_sync_progress}, epoch: {epoch_no}, block: {block_no}")
         time.sleep(1)
         count += 1
 
     end_sync = time.perf_counter()
     sync_time_seconds = int(end_sync - start_sync)
     return sync_time_seconds
+
 
 def main():
 
@@ -335,8 +404,8 @@ def main():
     export_epoch_sync_times_from_db(EPOCH_SYNC_TIMES_FILE_NAME)
 
     # shut down services
-    stop_process('cardano-node')
     stop_process('cardano-db-sync')
+    stop_process('cardano-node')
 
     # compress artifacts
     NODE_ARCHIVE = 'cardano_node.zip'

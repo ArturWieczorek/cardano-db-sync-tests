@@ -1,8 +1,0 @@
-steps:
-  - label: 'Db sync tests on shelley_qa'
-    commands:
-      - "./start_node.sh -e shelley_qa -p 3458"
-    timeout_in_minutes: 180
-    agents:
-      system: x86_64-linux
-      queue: benchmark_large

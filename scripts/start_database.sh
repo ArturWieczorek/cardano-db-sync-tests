@@ -12,6 +12,8 @@ PGPASSFILE=$PGPASSFILE scripts/postgresql-setup.sh --createdb
 
 nix-build -A cardano-db-sync -o db-sync-node
 
+export DbSyncAbortOnPanic=1
+
 if [ "$ENVIRONMENT" = "shelley_qa" ];
 then
     PGPASSFILE=$PGPASSFILE db-sync-node/bin/cardano-db-sync --config config/shelley-qa-config.json --socket-path ../cardano-node/db/node.socket --schema-dir schema/ --state-dir ledger-state/${ENVIRONMENT} >> ${LOG_FILEPATH} &

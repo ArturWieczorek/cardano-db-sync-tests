@@ -2,7 +2,7 @@ steps:
   - label: ':drum_with_drumsticks: Run cardano-db-sync full sync tests :drum_with_drumsticks:'
     commands:
       - nix-shell --run 'python ./db_sync_tests.py -npr "3458" -dbr "master" -e "testnet"'
-    timeout_in_minutes: 360
+    timeout_in_minutes: 600
     agents:
       system: x86_64-linux
       queue: default
