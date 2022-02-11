@@ -304,18 +304,28 @@ def get_db_sync_progress():
 
 
 def get_db_sync_tip():
+    isPostgresOn = True
+    count = 0
     p = subprocess.Popen(["psql", "-P", "pager=off", "-qt", "-U", "postgres", "-d", f"{get_environment()}",  "-c", "select epoch_no, block_no from block order by id desc limit 1;" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    try:
-        outs, errs = p.communicate(timeout=5)
-        epoch_no, block_no = [e.strip() for e in outs.decode("utf-8").split("|")]
-        return epoch_no, block_no
-    except TimeoutExpired as e:
-        p.kill()
-        raise RuntimeError(
-            "command '{}' return with error (code {}): {}".format(
-                e.cmd, e.returncode, " ".join(str(e.output).split())
+
+    while isPostgresOn:
+        try:
+            outs, errs = p.communicate(timeout=5)
+            epoch_no, block_no = [e.strip() for e in outs.decode("utf-8").split("|")]
+            return epoch_no, block_no
+        except ValueError as e:
+            if count > 10:
+                isPostgresOn = False
+                raise
+            time.sleep(60)
+            count += 1
+        except TimeoutExpired as e:
+            p.kill()
+            raise RuntimeError(
+                "command '{}' return with error (code {}): {}".format(
+                    e.cmd, e.returncode, " ".join(str(e.output).split())
+                )
             )
-        )
 
 
 def export_epoch_sync_times_from_db(file):
