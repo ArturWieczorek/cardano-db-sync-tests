@@ -1,5 +1,5 @@
 #! /usr/bin/env nix-shell
-#! nix-shell -i bash --pure --keep LOG_FILEPATH --keep ENVIRONMENT -p glibcLocales postgresql lsof procps
+#! nix-shell -i bash --keep LOG_FILEPATH --keep ENVIRONMENT -p glibcLocales postgresql lsof procps
 # shellcheck shell=bash
 
 cd cardano-db-sync

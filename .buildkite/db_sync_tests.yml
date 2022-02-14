@@ -5,4 +5,4 @@ steps:
     timeout_in_minutes: 600
     agents:
       system: x86_64-linux
-      queue: default
+      queue: benchmark_large
