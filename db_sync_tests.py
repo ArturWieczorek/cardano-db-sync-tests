@@ -29,6 +29,7 @@ ROOT_TEST_PATH = Path.cwd()
 
 NODE_LOG_FILE_PATH = f"{ROOT_TEST_PATH}/cardano-node/node_logfile.log"
 DB_SYNC_LOG_FILE_PATH = f"{ROOT_TEST_PATH}/cardano-db-sync/db_sync_logfile.log"
+TEST_RESULTS_FILE_NAME = 'test_results.json'
 EPOCH_SYNC_TIMES_FILE_NAME = 'epoch_sync_times_dump.json'
 EPOCH_SYNC_TIMES_FILE_PATH = f"{ROOT_TEST_PATH}/cardano-db-sync/{EPOCH_SYNC_TIMES_FILE_NAME}"
 
@@ -357,7 +358,7 @@ def wait_for_db_to_sync():
             time.sleep(5)
 
     count = 0
-    while db_sync_progress < 99.99:
+    while db_sync_progress < 1:
         if count % 60 == 0:
             get_node_tip()
             epoch_no, block_no = get_db_sync_tip()
@@ -403,19 +404,48 @@ def main():
     setup_postgres()
     DB_SYNC_DIR = clone_repo('cardano-db-sync', db_branch)
     os.chdir(DB_SYNC_DIR)
+    sync_test_start_time = get_current_date_time()
     start_db_sync()
     db_sync_version, db_sync_git_rev = get_db_sync_version()
     print(f"- cardano-db-sync version: {db_sync_version}")
     print(f"- cardano-db-sync git revision: {db_sync_git_rev}")
     print_file(DB_SYNC_LOG_FILE_PATH)
     db_full_sync_time_in_secs = wait_for_db_to_sync()
-    print(f"FINAL db-sync progress: {get_db_sync_progress()}")
+    epoch_no, block_no = get_db_sync_tip()
+    end_test_time = get_current_date_time()
+    print(f"FINAL db-sync progress: {get_db_sync_progress()}, epoch: {epoch_no}, block: {block_no}")
     print(f"TOTAL sync time [sec]: {db_full_sync_time_in_secs}")
-    export_epoch_sync_times_from_db(EPOCH_SYNC_TIMES_FILE_NAME)
+
 
     # shut down services
     stop_process('cardano-db-sync')
     stop_process('cardano-node')
+
+    # export test data as a json file
+    test_data = OrderedDict()
+    test_data["platform_system"] = platform_system
+    test_data["platform_release"] = platform_release
+    test_data["platform_version"] = platform_version
+    test_data["no_of_cpu_cores"] = get_no_of_cpu_cores()
+    test_data["total_ram_in_GB"] = get_total_ram_in_GB()
+    test_data["env"] = env
+    test_data["node_pr"] = node_pr
+    test_data["db_sync_branch"] = db_branch
+    test_data["node_cli_version"] = cli_version
+    test_data["node_git_revision"] = cli_git_rev
+    test_data["db_sync_version"] = db_sync_version
+    test_data["db_sync_git_rev"] = db_sync_git_rev
+    test_data["start_test_time"] = start_test_time
+    test_data["end_test_time"] = end_test_time
+    test_data["total_sync_time_in_sec"] = db_full_sync_time_in_secs
+    test_data["total_sync_time_in_h_m_s"] = seconds_to_time(int(db_full_sync_time_in_secs))
+    test_data["last_synced_epoch_no"] = epoch_no
+    test_data["last_synced_block_no"] = block_no
+    with open(TEST_RESULTS_FILE_NAME, 'w') as test_results_file:
+        json.dump(test_data, test_results_file, indent=2)
+    export_epoch_sync_times_from_db(EPOCH_SYNC_TIMES_FILE_NAME)
+
+    print_file(TEST_RESULTS_FILE_NAME)
 
     # compress artifacts
     NODE_ARCHIVE = 'cardano_node.zip'
