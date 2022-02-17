@@ -2,6 +2,7 @@ steps:
   - label: ':drum_with_drumsticks: Run cardano-db-sync full sync tests :drum_with_drumsticks:'
     commands:
       - nix-shell --run 'python ./db_sync_tests.py -npr "3458" -dbr "tags/12.0.2" -e "shelley_qa"'
+      - nix-shell --run 'python ./write_test_data_to_db.py -e "shelley_qa"'
     timeout_in_minutes: 600
     agents:
       system: x86_64-linux

@@ -1,0 +1,50 @@
+
+shelley_qa_db_sync:
+
+CREATE TABLE `shelley_qa_db_sync` (
+  `identifier` varchar(255) NOT NULL,
+  `env` varchar(255) NOT NULL,
+  `node_pr` varchar(255) NOT NULL,
+  `db_sync_branch` varchar(255) DEFAULT NULL,
+  `node_cli_version` varchar(255) NOT NULL,
+  `node_git_revision` varchar(255) NOT NULL,
+  `db_sync_version` varchar(255) NOT NULL,
+  `db_sync_git_rev` varchar(255) NOT NULL,
+  `start_test_time` varchar(255) NOT NULL,
+  `end_test_time` varchar(255) NOT NULL,
+  `total_sync_time_in_sec` int DEFAULT NULL,
+  `total_sync_time_in_h_m_s` varchar(255) DEFAULT NULL,
+  `last_synced_epoch_no` int DEFAULT NULL,
+  `last_synced_block_no` int DEFAULT NULL,
+  `platform_system` varchar(255) NOT NULL,
+  `platform_release` varchar(255) NOT NULL,
+  `platform_version` varchar(255) NOT NULL,
+  `no_of_cpu_cores` int DEFAULT NULL,
+  `total_ram_in_GB` int DEFAULT NULL,
+  PRIMARY KEY (`identifier`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+sql_ddl_shelley_qa_db_sync = 'CREATE TABLE shelley_qa_db_sync ( '
+  'identifier varchar(255) NOT NULL, '
+  'env varchar(255) NOT NULL, '
+  'node_pr varchar(255) NOT NULL, '
+  'db_sync_branch varchar(255) DEFAULT NULL, '
+  'node_cli_version varchar(255) NOT NULL, '
+  'node_git_revision varchar(255) NOT NULL, '
+  'db_sync_version varchar(255) NOT NULL, '
+  'db_sync_git_rev varchar(255) NOT NULL, '
+  'start_test_time varchar(255) NOT NULL, '
+  'end_test_time varchar(255) NOT NULL, '
+  'total_sync_time_in_sec int DEFAULT NULL, '
+  'total_sync_time_in_h_m_s varchar(255) DEFAULT NULL, '
+  'last_synced_epoch_no int DEFAULT NULL, '
+  'last_synced_block_no int DEFAULT NULL, '
+  'platform_system varchar(255) NOT NULL, '
+  'platform_release varchar(255) NOT NULL, '
+  'platform_version varchar(255) NOT NULL, '
+  'no_of_cpu_cores int DEFAULT NULL, '
+  'total_ram_in_GB int DEFAULT NULL, '
+  'PRIMARY KEY (identifier) '
+') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci'
+
+create_table(sql_ddl_shelley_qa_db_sync)

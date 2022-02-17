@@ -443,6 +443,7 @@ def main():
     test_data["last_synced_block_no"] = block_no
     with open(TEST_RESULTS_FILE_NAME, 'w') as test_results_file:
         json.dump(test_data, test_results_file, indent=2)
+
     export_epoch_sync_times_from_db(EPOCH_SYNC_TIMES_FILE_NAME)
 
     print_file(TEST_RESULTS_FILE_NAME)
@@ -452,14 +453,14 @@ def main():
     DB_SYNC_ARCHIVE = 'cardano_db_sync.zip'
     SYNC_DATA_ARCHIVE = 'epoch_sync_times_dump.zip'
 
-    zip_file(NODE_ARCHIVE, NODE_LOG_FILE_PATH)
-    zip_file(DB_SYNC_ARCHIVE, DB_SYNC_LOG_FILE_PATH)
-    zip_file(SYNC_DATA_ARCHIVE, EPOCH_SYNC_TIMES_FILE_PATH)
+    #zip_file(NODE_ARCHIVE, NODE_LOG_FILE_PATH)
+    #zip_file(DB_SYNC_ARCHIVE, DB_SYNC_LOG_FILE_PATH)
+    #zip_file(SYNC_DATA_ARCHIVE, EPOCH_SYNC_TIMES_FILE_PATH)
 
     # upload artifacts
-    upload_artifact(NODE_ARCHIVE)
-    upload_artifact(DB_SYNC_ARCHIVE)
-    upload_artifact(SYNC_DATA_ARCHIVE)
+    #upload_artifact(NODE_ARCHIVE)
+    #upload_artifact(DB_SYNC_ARCHIVE)
+    #upload_artifact(SYNC_DATA_ARCHIVE)
 
 
 if __name__ == "__main__":

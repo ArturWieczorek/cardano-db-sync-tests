@@ -7,6 +7,7 @@ let
     requests
     psutil
     GitPython
+    pymysql
     # other python packages if needed
   ]);
 in
